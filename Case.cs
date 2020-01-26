@@ -48,5 +48,25 @@ namespace Migros
             }
             return (x, y);
         }
+        public void Client_arrived_at_case()
+        {
+            count_client++;
+        }
+        public bool is_full()
+        {
+            if (max_client == count_client)
+            {
+                Console.WriteLine("the Case " + name + "is full !");
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public void Opening()
+        {
+            is_open = true;
+        }
     }
 }
