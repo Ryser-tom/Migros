@@ -8,20 +8,19 @@ namespace Migros
     public class Client
     {
         public int time_in_shop;
-        private int human_speed;
         private int speed_x = -4;
         private int speed_y = 4;
         public int x = 850;
         public int y = 500;
         public int size = 30;
         private int time_left;
-        private Case going_to_case;
+        private Checkout going_to_checkout;
         public string name;
         public bool waiting = false;
         public bool exit_shop = false;
         public bool done = false;
 
-        public Client(int time_in_shop, int human_speed, string name)
+        public Client(int time_in_shop, string name)
         {
             Random random = new Random();
             int rnd_x = random.Next(1100, 1300);
@@ -29,12 +28,16 @@ namespace Migros
 
             this.time_in_shop = time_in_shop;
             this.time_left = time_in_shop;
-            this.human_speed = human_speed;
             this.name = name;
             this.x = rnd_x;
             this.y = rnd_y;
         }
 
+        /// <summary>
+        /// Function that return the brush color for the client.
+        /// </summary>
+        /// <param name="max"></param>
+        /// <returns></returns>
         public SolidBrush Get_color(int max)
         {
             int slice = max / 5;
@@ -60,7 +63,11 @@ namespace Migros
             return br;
         }
 
-        public void Move(List<Case> shop_case)
+        /// <summary>
+        /// Function for the movement of the client.
+        /// </summary>
+        /// <param name="shop_checkout"></param>
+        public void Move(List<Checkout> shop_checkout)
         {
             //do i have everything ?
             if (time_left >= 0)
@@ -70,41 +77,38 @@ namespace Migros
             }
             else
             {
-                try
+                if (!waiting)
                 {
-                    if (!waiting)
-                    {
-                        Where_to_move(shop_case);
-                    }
-                    if (going_to_case == null)
-                    {
-                        Move_random();
-                        return;
-                    }
-                    //if i'm first  = *0
-
-                    if (!going_to_case.is_full())
-                    {
-                        int obj_x = going_to_case.position_x + 120 + Position_in_case();
-                        int obj_y = going_to_case.position_y;
-
-                        if (Go(obj_x, obj_y))
-                        {
-                            going_to_case.Client_arrived_at_case(this);
-                            waiting = true;
-                        }
-                    }
+                    Where_to_move(shop_checkout);
                 }
-                catch (Exception e)
+                if (going_to_checkout == null)
                 {
-                    Console.WriteLine("Move : error" + e);
+                    Move_random();
+                    return;
+                }
+                //if i'm first  = *0
+
+                if (!going_to_checkout.is_full())
+                {
+                    int obj_x = going_to_checkout.position_x + 120 + Position_in_checkout();
+                    int obj_y = going_to_checkout.position_y;
+
+                    if (Go(obj_x, obj_y))
+                    {
+                        going_to_checkout.Client_arrived_at_checkout(this);
+                        waiting = true;
+                    }
                 }
             }
         }
         
-        private void Where_to_move(List<Case> shop_cases)
+        /// <summary>
+        /// Function to choose which checkout the client is going.
+        /// </summary>
+        /// <param name="Shop_checkout"></param>
+        private void Where_to_move(List<Checkout> Shop_checkout)
         {
-            IEnumerable<Case> query = shop_cases.OrderBy(item => item.Client_waiting.Count);
+            IEnumerable<Checkout> query = Shop_checkout.OrderBy(item => item.Client_waiting.Count);
 
             using (var sequenceEnum = query.GetEnumerator())
             {
@@ -117,8 +121,8 @@ namespace Migros
                             var availability = sequenceEnum.Current.Is_available();
                             if (availability)
                             {
-                                Case to_add = shop_cases.Find(c => c.name.Contains(sequenceEnum.Current.name));
-                                going_to_case = to_add;
+                                Checkout to_add = Shop_checkout.Find(c => c.name.Contains(sequenceEnum.Current.name));
+                                going_to_checkout = to_add;
                                 return;
                             }
                         }
@@ -133,6 +137,12 @@ namespace Migros
             }
         }
         
+        /// <summary>
+        /// Function to calculate the next coordonate for the client.
+        /// </summary>
+        /// <param name="obj_x"></param>
+        /// <param name="obj_y"></param>
+        /// <returns></returns>
         private bool Go(int obj_x, int obj_y)
         {
            if (speed_x < 0)
@@ -195,6 +205,11 @@ namespace Migros
 
         }
 
+        /// <summary>
+        /// Function that count the time left to end the checkout.
+        /// </summary>
+        /// <param name="pos_y"></param>
+        /// <returns></returns>
         public bool Checkout(int pos_y)
         {
             if (time_in_shop / 10 <= 0)
@@ -206,6 +221,10 @@ namespace Migros
 
             return false;
         }
+
+        /// <summary>
+        /// Function for the client so he can move in the shop while waiting for checking. (Running his errands or waiting for a checkout to open up.)
+        /// </summary>
         private void Move_random()
         {
             if (x < 500)
@@ -228,18 +247,27 @@ namespace Migros
             x = x + speed_x;
             y = y + speed_y;
         }
-        private int Position_in_case()
+
+        /// <summary>
+        /// Function to get the coordinates for the client depending on the number of clients in the queue.
+        /// </summary>
+        /// <returns></returns>
+        private int Position_in_checkout()
         {
-            int count = going_to_case.Client_waiting.Count;
+            int count = going_to_checkout.Client_waiting.Count;
             for (int i = 0; i < count; i++)
             {
-                if (going_to_case.Client_waiting[i].name == this.name)
+                if (going_to_checkout.Client_waiting[i].name == this.name)
                 {
                     return (50 * i);
                 }
             }
             return 50 * count;
         }
+        
+        /// <summary>
+        /// Function to check the time left searching in the shop for the client.
+        /// </summary>
         public void Gathering()
         {
             if (time_left >= 0)
