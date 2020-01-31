@@ -1,62 +1,113 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Migros
 {
-    public class Case{
-        public int time_to_wait;
+    public class Case
+    {
+        public List<Client> Client_waiting = new List<Client>();
         public bool is_open;
+        public bool opening;
         public string name;
 
         public int height;
         public int width;
         public int position_x;
         public int position_y;
-        private int max_client;
-        private int count_client;
 
-        public Case(int max_client, string name, bool is_open, int x, int y){
-            this.name       = name;
-            this.is_open    = is_open;
+        private int Time_to_open;
+        private int max_client;
+        private int left_to_change = 0;
+
+        public Case(int max_client, string name, bool is_open, int x, int y, int time)
+        {
+            this.name = name;
+            this.is_open = is_open;
             this.position_x = x;
             this.position_y = y;
+            this.Time_to_open = time;
             this.max_client = max_client;
         }
-        public bool Open(bool status)
+        public bool Status_change(string status)
         {
-            if(status != is_open)
+            switch (status)
             {
-                is_open = status;
-                return true;
+                case "open":
+                    Opening();
+                    break;
+                case "close":
+                    Closing();
+                    break;
+                default:
+                    break;
             }
-            return false;
+            return true;
         }
+        private void Opening()
+        {
+            if (true != is_open)
+            {
+                if (left_to_change <= 0 && opening)
+                {
+                    is_open = true;
+                }
+                else if (!opening)
+                {
+                    opening = true;
+                    left_to_change = Time_to_open;
+
+                }
+                left_to_change--;
+                Console.WriteLine("case " + name + "will open in" + left_to_change);
+            }
+        }
+        private void Closing()
+        {
+            if (left_to_change <= 0 && opening)
+            {
+                is_open = false;
+            }
+            else if (!opening)
+            {
+                opening = true;
+                left_to_change = Time_to_open;
+
+            }
+            left_to_change--;
+            Console.WriteLine("case " + name + "will close in" + left_to_change);
+        }    
+
         public (int x, int y) Is_available()
         {
             int x = 0;
             int y = 0;
             if (is_open)
             {
-                if (max_client != count_client)
+                if (max_client >= Client_waiting.Count())
                 {
-                    x = position_x;
-                    y = position_y;
+                    x = 120 + position_x + (30 * Client_waiting.Count());
+                    y = 25 + position_y;
+                }
+                else
+                {
+                    //Console.WriteLine("oops");
                 }
             }
             return (x, y);
         }
-        public void Client_arrived_at_case()
+        public void Client_arrived_at_case(Client client_comming)
         {
-            count_client++;
+            if (!Client_waiting.Any(c => c.name == client_comming.name))
+            {
+                Client_waiting.Add(client_comming);
+            }
         }
         public bool is_full()
         {
-            if (max_client == count_client)
+            if (max_client == Client_waiting.Count)
             {
-                Console.WriteLine("the Case " + name + "is full !");
+                //Console.WriteLine("the Case " + name + "is full !");
                 return true;
             }
             else
@@ -64,9 +115,17 @@ namespace Migros
                 return false;
             }
         }
-        public void Opening()
+        public bool Checkout()
         {
-            is_open = true;
+            if (Client_waiting.Count() > 0)
+            {
+                if (Client_waiting[0].Checkout(position_y))
+                {
+                    Client_waiting.RemoveAt(0);
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

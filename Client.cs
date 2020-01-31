@@ -1,27 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Drawing;
+using System.Linq;
 
 namespace Migros
 {
-    class Client
+    public class Client
     {
-        private int time_in_shop;
+        public int time_in_shop;
         private int human_speed;
+        private int speed_x = -4;
+        private int speed_y = 4;
         public int x = 1180;
         public int y = 500;
         public int size = 30;
         private int time_left;
         private Case going_to_case;
+        public string name;
+        public bool waiting = false;
+        public bool exit_shop = false;
+        public bool done = false;
 
-        public Client(int time_in_shop, int human_speed)
+        public Client(int time_in_shop, int human_speed, string name)
         {
             this.time_in_shop = time_in_shop;
             this.time_left = time_in_shop;
             this.human_speed = human_speed;
+            this.name = name;
         }
 
         public SolidBrush Get_color(int max)
@@ -48,62 +53,104 @@ namespace Migros
             }
             return br;
         }
-        
-        public bool Move(List<Case> shop_case)
+
+        public void Move(List<Case> shop_case)
         {
             //do i have everything ?
             if (time_left != 0)
             {
                 //No i don't
                 time_left--;
+                Move_random();
             }
             else
             {
-                //Yes i do
-                Console.WriteLine("Time to pay");
-                if (going_to_case == null)
+                try
                 {
-                    Where_to_move(shop_case);
-                }
-                else
-                {
+                    if (!waiting)
+                    {
+                        Where_to_move(shop_case);
+                    }
+                    if (going_to_case == null)
+                    {
+                        Move_random();
+                        return;
+                    }
                     if (Go(going_to_case.position_x, going_to_case.position_y))
                     {
-                        going_to_case.Client_arrived_at_case();
-                        return true;
+                        going_to_case.Client_arrived_at_case(this);
+                        waiting = true;
                     }
                 }
-            }
-            return false;
-        }
-        private void Where_to_move(List<Case> shop_case)
-        {
-            foreach (var item in shop_case)
-            {
-                var position = item.Is_available();
-                if (position.x!=0)
+                catch (Exception e)
                 {
-                    going_to_case = item;
+                    Console.WriteLine("Move : error");
                 }
+            }
+        }
+        private void Where_to_move(List<Case> shop_cases)
+        {
+            IEnumerable<Case> query = shop_cases.OrderBy(item => item.Client_waiting.Count);
 
+            using (var sequenceEnum = query.GetEnumerator())
+            {
+                while (sequenceEnum.MoveNext())
+                {
+                    if (!sequenceEnum.Current.is_full())
+                    {
+                        try
+                        {
+                            var position = sequenceEnum.Current.Is_available();
+                            if (position.x != 0)
+                            {
+                                Case to_add = shop_cases.Find(c => c.name.Contains(sequenceEnum.Current.name));
+                                going_to_case = to_add;
+                                return;
+                            }
+                            else
+                            {
+                                Move_random();
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            Console.WriteLine("Where_to_move : error");
+                        }
+                    }
+
+                }
             }
         }
         private bool Go(int obj_x, int obj_y)
         {
-            int speed = human_speed - (time_in_shop/2);
+            if (speed_x < 0)
+                speed_x = speed_x * -1;
+
+            if (speed_y < 0)
+                speed_y = speed_y * -1;
+
+            if (exit_shop)
+            {
+                if(x <= -50)
+                {
+                    this.done = true;
+                }
+                x = x - 10;
+                return false;
+            }
             bool OK_x = false;
             bool OK_y = false;
             switch (x)
             {
-                case var expression when x > obj_x && x < (obj_x + 120):
+                case var expression when x > obj_x - 10 && x < (obj_x + 10):
                     //ok do nothing
                     OK_x = true;
                     break;
                 case var expression when x > obj_x:
-                    x = x - speed;
+                    x = x - speed_x;
                     break;
                 case var expression when x < obj_x:
-                    x = x + speed;
+                    x = x + speed_x;
                     break;
                 default:
                     //ok do nothinbg in x
@@ -111,15 +158,15 @@ namespace Migros
             }
             switch (y)
             {
-                case var expression when y > obj_y && y < (obj_y + 25):
+                case var expression when y > obj_y - 10 && y < (obj_y + 10):
                     //ok do nothing
                     OK_y = true;
                     break;
                 case var expression when y > obj_y:
-                    y = y - speed;
+                    y = y - speed_y;
                     break;
                 case var expression when y < obj_y:
-                    y = y + speed;
+                    y = y + speed_y;
                     break;
                 default:
                     //ok do nothinbg in y
@@ -134,6 +181,32 @@ namespace Migros
                 return false;
             }
 
+        }
+
+        public bool Checkout(int pos_y)
+        {
+            if (time_in_shop / 5 <= 0)
+            {
+                exit_shop = true;
+                return true;
+            }
+            time_in_shop--;
+
+            return false;
+        }
+        private void Move_random()
+        {
+            return;
+            if (x + speed_x > 600 || x + speed_x < 200)
+            {
+                speed_x = speed_x * -1;
+            }
+            if (y + speed_y > 800 || y + speed_y < 0)
+            {
+                speed_y = speed_y * -1;
+            }
+            x = x + speed_x;
+            y = y + speed_y;
         }
     }
 }
