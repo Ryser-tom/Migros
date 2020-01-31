@@ -8,7 +8,7 @@ namespace Migros
     {
         public List<Client> Client_waiting = new List<Client>();
         public bool is_open;
-        public bool opening;
+        public bool status_changing;
         public string name;
 
         public int height;
@@ -28,55 +28,22 @@ namespace Migros
             this.position_y = y;
             this.Time_to_open = time;
             this.max_client = max_client;
+            this.status_changing = false;
         }
+        /// <summary>
+        /// To call when you want to change the status of a case.
+        /// </summary>
+        /// <param name="status"></param>
+        /// <returns></returns>
         public bool Status_change(string status)
         {
-            switch (status)
+            if (!status_changing)
             {
-                case "open":
-                    Opening();
-                    break;
-                case "close":
-                    Closing();
-                    break;
-                default:
-                    break;
+                status_changing = true;
+                left_to_change = Time_to_open;
             }
             return true;
-        }
-        private void Opening()
-        {
-            if (true != is_open)
-            {
-                if (left_to_change <= 0 && opening)
-                {
-                    is_open = true;
-                }
-                else if (!opening)
-                {
-                    opening = true;
-                    left_to_change = Time_to_open;
-
-                }
-                left_to_change--;
-                Console.WriteLine("case " + name + " will open in : " + left_to_change);
-            }
-        }
-        private void Closing()
-        {
-            if (left_to_change <= 0 && opening)
-            {
-                is_open = false;
-            }
-            else if (!opening)
-            {
-                opening = true;
-                left_to_change = Time_to_open;
-
-            }
-            left_to_change--;
-            Console.WriteLine("case " + name + " will close in : " + left_to_change);
-        }    
+        } 
 
         public bool Is_available()
         {
@@ -119,6 +86,23 @@ namespace Migros
                 }
             }
             return false;
+        }
+        public void time_check()
+        {
+            // TODO function for timer until case openinge or closing.
+            if (status_changing)
+            {
+                if (Client_waiting.Count <= 0)
+                {
+                    left_to_change--;
+                    Console.WriteLine("case " + name + " status will change in : " + left_to_change);
+                    if (left_to_change <= 0 && status_changing)
+                    {
+                        is_open = !is_open;
+                        status_changing = false;
+                    }
+                }
+            }
         }
     }
 }
