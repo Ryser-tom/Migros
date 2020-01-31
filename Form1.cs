@@ -7,10 +7,10 @@ namespace Migros
 {
     public partial class Form1 : Form
     {
-        private int MAX_CLIENT = 25;
+        private int MAX_CLIENT = 3;
         private int MAX_CLIENT_AT_CASE = 5;
-        private int MIN_TIME_IN_SHOP = 5;
-        private int MAX_TIME_IN_SHOP = 30;
+        private int MIN_TIME_IN_SHOP = 10;
+        private int MAX_TIME_IN_SHOP = 100;
         private int TIME_BEFOR_OPEN_NEW_CASE = 30;
         private int HUMAN_SPEED = 10;
         private int h = 66;
@@ -89,6 +89,7 @@ namespace Migros
         private void timer1_Tick(object sender, EventArgs e)
         {
             //every Sec
+            
             if (Shop_clients.Count < MAX_CLIENT)
             {
                 Random random = new Random();
@@ -96,10 +97,16 @@ namespace Migros
                 Shop_clients.Add(new Client(randomNumber, HUMAN_SPEED, Shop_clients.Count.ToString()));
                 //Console.WriteLine("New client (" + Shop_clients.Count +")");
             }
+
+            foreach (var client in Shop_clients)
+            {
+                client.Gathering();
+            }
+
             foreach (var item in Shop_cases)
             {
                 item.Checkout();
-                if (item.is_open && item.Client_waiting.Count == 0)
+                if (item.is_open && item.Client_waiting.Count == 0 && item.name != "case0")
                 {
                     item.Status_change("close");
                 }
@@ -115,13 +122,11 @@ namespace Migros
             {
                 if (client.done)
                 {
-                    //TODO create list of client to destroy
                     var to_remove = Shop_clients.Find(item => item.done == true);
                     Client_to_destroy.Add(to_remove);
                 }
                 client.Move(Shop_cases);
             }
-            //TODO destroy client
             foreach (var client in Client_to_destroy)
             {
                 Shop_clients.Remove(client);
@@ -133,15 +138,23 @@ namespace Migros
                 {
                     try
                     {
-                        if (!Shop_cases[i + 1].is_open)
+                        //freeze error
+                        if (Shop_cases.Count-1 != i)
                         {
-                            if (!Shop_cases[i + 1].opening || opening_case)
+                            if (!Shop_cases[i + 1].is_open)
                             {
-                                Shop_cases[i + 1].Status_change("open");
-                                opening_case = true;
+                                if (!Shop_cases[i + 1].opening || opening_case)
+                                {
+                                    Shop_cases[i + 1].Status_change("open");
+                                    opening_case = true;
+                                }
+                                Console.WriteLine("waiting for case to open");
+                                return;
                             }
-                            Console.WriteLine("waiting for case to open");
-                            return;
+                        }
+                        else
+                        {
+                            Console.WriteLine("all case are full.");
                         }
                     }
                     catch (Exception)

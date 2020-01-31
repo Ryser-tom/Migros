@@ -23,10 +23,15 @@ namespace Migros
 
         public Client(int time_in_shop, int human_speed, string name)
         {
+            Random random = new Random();
+            int rnd = random.Next(500, 1300);
+
             this.time_in_shop = time_in_shop;
             this.time_left = time_in_shop;
             this.human_speed = human_speed;
             this.name = name;
+            this.x = rnd;
+            this.y = rnd;
         }
 
         public SolidBrush Get_color(int max)
@@ -57,10 +62,9 @@ namespace Migros
         public void Move(List<Case> shop_case)
         {
             //do i have everything ?
-            if (time_left != 0)
+            if (time_left >= 0)
             {
                 //No i don't
-                time_left--;
                 Move_random();
             }
             else
@@ -76,18 +80,27 @@ namespace Migros
                         Move_random();
                         return;
                     }
-                    if (Go(going_to_case.position_x, going_to_case.position_y))
+                    //if i'm first  = *0
+
+                    if (!going_to_case.is_full())
                     {
-                        going_to_case.Client_arrived_at_case(this);
-                        waiting = true;
+                        int obj_x = going_to_case.position_x + 120 + Position_in_case();
+                        int obj_y = going_to_case.position_y;
+
+                        if (Go(obj_x, obj_y))
+                        {
+                            going_to_case.Client_arrived_at_case(this);
+                            waiting = true;
+                        }
                     }
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Move : error");
+                    Console.WriteLine("Move : error" + e);
                 }
             }
         }
+        
         private void Where_to_move(List<Case> shop_cases)
         {
             IEnumerable<Case> query = shop_cases.OrderBy(item => item.Client_waiting.Count);
@@ -100,8 +113,8 @@ namespace Migros
                     {
                         try
                         {
-                            var position = sequenceEnum.Current.Is_available();
-                            if (position.x != 0)
+                            var availability = sequenceEnum.Current.Is_available();
+                            if (availability)
                             {
                                 Case to_add = shop_cases.Find(c => c.name.Contains(sequenceEnum.Current.name));
                                 going_to_case = to_add;
@@ -121,9 +134,10 @@ namespace Migros
                 }
             }
         }
+        
         private bool Go(int obj_x, int obj_y)
         {
-            if (speed_x < 0)
+           if (speed_x < 0)
                 speed_x = speed_x * -1;
 
             if (speed_y < 0)
@@ -185,7 +199,7 @@ namespace Migros
 
         public bool Checkout(int pos_y)
         {
-            if (time_in_shop / 5 <= 0)
+            if (time_in_shop / 10 <= 0)
             {
                 exit_shop = true;
                 return true;
@@ -196,17 +210,36 @@ namespace Migros
         }
         private void Move_random()
         {
-            return;
-            if (x + speed_x > 600 || x + speed_x < 200)
+            //need correction
+            if (x + speed_x > 1400 || x + speed_x < 500)
             {
                 speed_x = speed_x * -1;
             }
-            if (y + speed_y > 800 || y + speed_y < 0)
+            if (y + speed_y > 950 || y + speed_y < 75)
             {
                 speed_y = speed_y * -1;
             }
             x = x + speed_x;
             y = y + speed_y;
+        }
+        private int Position_in_case()
+        {
+            int count = going_to_case.Client_waiting.Count;
+            for (int i = 0; i < count; i++)
+            {
+                if (going_to_case.Client_waiting[i].name == this.name)
+                {
+                    return (50 * i);
+                }
+            }
+            return 50 * count;
+        }
+        public void Gathering()
+        {
+            if (time_left >= 0)
+            {
+                time_left--;
+            }
         }
     }
 }

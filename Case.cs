@@ -59,7 +59,7 @@ namespace Migros
 
                 }
                 left_to_change--;
-                Console.WriteLine("case " + name + "will open in" + left_to_change);
+                Console.WriteLine("case " + name + " will open in : " + left_to_change);
             }
         }
         private void Closing()
@@ -75,26 +75,19 @@ namespace Migros
 
             }
             left_to_change--;
-            Console.WriteLine("case " + name + "will close in" + left_to_change);
+            Console.WriteLine("case " + name + " will close in : " + left_to_change);
         }    
 
-        public (int x, int y) Is_available()
+        public bool Is_available()
         {
-            int x = 0;
-            int y = 0;
             if (is_open)
             {
                 if (max_client >= Client_waiting.Count())
                 {
-                    x = 120 + position_x + (30 * Client_waiting.Count());
-                    y = 25 + position_y;
-                }
-                else
-                {
-                    //Console.WriteLine("oops");
+                    return true;
                 }
             }
-            return (x, y);
+            return false;
         }
         public void Client_arrived_at_case(Client client_comming)
         {
@@ -107,7 +100,7 @@ namespace Migros
         {
             if (max_client == Client_waiting.Count)
             {
-                //Console.WriteLine("the Case " + name + "is full !");
+                //Console.WriteLine("the Case " + name + " is full !");
                 return true;
             }
             else
